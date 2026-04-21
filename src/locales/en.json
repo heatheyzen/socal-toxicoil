@@ -1,0 +1,63 @@
+{
+  "site": {
+    "title": "ACP5 Oil Spill Dashboard",
+    "subtitle": "Southern Coastal Planning Area · Los Angeles & Orange County"
+  },
+  "about": {
+    "sectionTitle": "About This Map",
+    "body": "Off the coast of Los Angeles and Orange County, dozens of offshore oil platforms have operated for decades — releasing residual pollutants into the air and sea. This dashboard maps those platforms alongside air quality data, oil pipelines, and community resources across ACP 5, California's Southern Coastal Planning Area.\n\nPM 2.5 — microscopic particles released by oil operations — penetrates deep into lungs and blood, causing asthma, heart disease, and premature death at higher rates in nearby communities. Indigenous nations, whose ancestral territories span this coastline, continue to advocate for clean water and healthy land.\n\nExplore the map to understand the health burden in your zip code, find local organizations working on oil spill response, and learn how to get involved.",
+    "sourcesLabel": "Data sources:",
+    "readMore": "Read more",
+    "readLess": "Read less"
+  },
+  "layers": {
+    "title": "Map Layers",
+    "oilRigs": "Offshore Oil Rigs",
+    "oilWells": "Oil Wells — LA County",
+    "pm25": "Air Quality — PM 2.5",
+    "pipeline": "Offshore Oil Pipelines",
+    "indigenous": "Indigenous Territories",
+    "orgs": "Community Organizations",
+    "deferred": "Coming soon"
+  },
+  "sidePanel": {
+    "close": "Close",
+    "learnMore": "Learn more →",
+    "visitWebsite": "Visit website →",
+    "viewProfile": "View full CalEnviroScreen profile →",
+    "noData": "No data available for this feature.",
+    "loading": "Loading…",
+    "fields": {
+      "platformName": "Platform Name",
+      "operator": "Operator",
+      "installYear": "Install Year",
+      "waterDepth": "Water Depth",
+      "pm25Context": "PM 2.5 Context",
+      "wellName": "Well Name",
+      "status": "Status",
+      "zipCode": "Zip Code",
+      "pm25Pct": "PM 2.5 Percentile",
+      "healthRisk": "Health Risk",
+      "nationName": "Nation Name",
+      "culturalNote": "About This Territory",
+      "pipelineName": "Pipeline Name",
+      "orgName": "Organization",
+      "mission": "Mission",
+      "contact": "Contact"
+    }
+  },
+  "news": {
+    "sectionTitle": "Recent Oil Spill News",
+    "readMore": "Read more →",
+    "unavailable": "News feed unavailable. Check back later."
+  },
+  "footer": {
+    "landAck": "This dashboard was created on the ancestral, unceded territories of the Tongva, Chumash, Acjachemen, and Kizh peoples, whose stewardship of this coastline continues today. We acknowledge their sovereignty and ongoing relationship to this land and sea.",
+    "disclaimer": "Created as an academic project. Data sourced from public government and nonprofit sources. Features shown do not constitute endorsement. Emergencies: OSPR 1-800-OILS-911.",
+    "credits": "Created by [YOUR NAME] · Environmental Science · [INSTITUTION] · [YEAR]  |  Built with ArcGIS Online, Next.js, and public data."
+  },
+  "lang": {
+    "toggle": "ES",
+    "current": "EN"
+  }
+}

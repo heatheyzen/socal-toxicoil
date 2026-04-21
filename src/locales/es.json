@@ -1,0 +1,63 @@
+{
+  "site": {
+    "title": "Panel de Derrames de Petróleo — APC 5",
+    "subtitle": "Área de Planificación Costera del Sur · Los Ángeles y Condado de Orange"
+  },
+  "about": {
+    "sectionTitle": "Acerca de Este Mapa",
+    "body": "Frente a las costas de Los Ángeles y el Condado de Orange, decenas de plataformas petroleras en alta mar han operado durante décadas, liberando contaminantes residuales al aire y al mar. Este panel mapea esas plataformas junto con datos de calidad del aire, oleoductos y recursos comunitarios en toda el ACP 5, el Área de Planificación Costera del Sur de California.\n\nEl PM 2.5 — partículas microscópicas liberadas por las operaciones petroleras — penetra profundamente en los pulmones y la sangre, causando asma, enfermedades cardíacas y muerte prematura a tasas más altas en las comunidades cercanas. Las naciones indígenas, cuyos territorios ancestrales abarcan esta costa, continúan abogando por agua limpia y tierra saludable.\n\nExplore el mapa para comprender la carga para la salud en su código postal, encontrar organizaciones locales que trabajan en la respuesta a derrames de petróleo y aprender cómo participar.",
+    "sourcesLabel": "Fuentes de datos:",
+    "readMore": "Leer más",
+    "readLess": "Leer menos"
+  },
+  "layers": {
+    "title": "Capas del Mapa",
+    "oilRigs": "Plataformas Petroleras en Alta Mar",
+    "oilWells": "Pozos de Petróleo — Condado de LA",
+    "pm25": "Calidad del Aire — PM 2.5",
+    "pipeline": "Oleoductos en Alta Mar",
+    "indigenous": "Territorios Indígenas",
+    "orgs": "Organizaciones Comunitarias",
+    "deferred": "Próximamente"
+  },
+  "sidePanel": {
+    "close": "Cerrar",
+    "learnMore": "Más información →",
+    "visitWebsite": "Visitar sitio web →",
+    "viewProfile": "Ver perfil completo de CalEnviroScreen →",
+    "noData": "No hay datos disponibles para esta función.",
+    "loading": "Cargando…",
+    "fields": {
+      "platformName": "Nombre de la Plataforma",
+      "operator": "Operador",
+      "installYear": "Año de Instalación",
+      "waterDepth": "Profundidad del Agua",
+      "pm25Context": "Contexto de PM 2.5",
+      "wellName": "Nombre del Pozo",
+      "status": "Estado",
+      "zipCode": "Código Postal",
+      "pm25Pct": "Percentil de PM 2.5",
+      "healthRisk": "Riesgo para la Salud",
+      "nationName": "Nombre de la Nación",
+      "culturalNote": "Acerca de Este Territorio",
+      "pipelineName": "Nombre del Oleoducto",
+      "orgName": "Organización",
+      "mission": "Misión",
+      "contact": "Contacto"
+    }
+  },
+  "news": {
+    "sectionTitle": "Noticias Recientes sobre Derrames de Petróleo",
+    "readMore": "Leer más →",
+    "unavailable": "Feed de noticias no disponible. Vuelva a intentarlo más tarde."
+  },
+  "footer": {
+    "landAck": "Este panel fue creado en los territorios ancestrales y no cedidos de los pueblos Tongva, Chumash, Acjachemen y Kizh, cuya gestión de esta costa continúa hoy. Reconocemos su soberanía y su relación continua con esta tierra y el mar.",
+    "disclaimer": "Creado como un proyecto académico. Datos provenientes de fuentes gubernamentales y sin fines de lucro disponibles públicamente. Las características mostradas no constituyen un respaldo. Emergencias: OSPR 1-800-OILS-911.",
+    "credits": "Creado por [SU NOMBRE] · Ciencias Ambientales · [INSTITUCIÓN] · [AÑO]  |  Desarrollado con ArcGIS Online, Next.js y datos públicos."
+  },
+  "lang": {
+    "toggle": "EN",
+    "current": "ES"
+  }
+}

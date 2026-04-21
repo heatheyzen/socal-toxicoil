@@ -1,0 +1,63 @@
+'use client';
+import { useState, useCallback } from 'react';
+import { LAYER_CONFIGS } from '@/lib/layers';
+import { LayerId, SidePanelContent } from '@/lib/types';
+import Header from '@/components/Header';
+import AboutSection from '@/components/AboutSection';
+import MapEmbed from '@/components/MapEmbed';
+import LayerPanel from '@/components/LayerPanel';
+import SidePanel from '@/components/SidePanel';
+import NewsFeed from '@/components/NewsFeed';
+import Footer from '@/components/Footer';
+
+function defaultVisibility(): Record<LayerId, boolean> {
+  return Object.fromEntries(
+    LAYER_CONFIGS.map(l => [l.id, l.defaultVisible])
+  ) as Record<LayerId, boolean>;
+}
+
+export default function Home() {
+  const [visibleLayers, setVisibleLayers] = useState<Record<LayerId, boolean>>(defaultVisibility);
+  const [sidePanelContent, setSidePanelContent] = useState<SidePanelContent | null>(null);
+
+  const handleToggleLayer = useCallback((id: LayerId) => {
+    setVisibleLayers(prev => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+
+  const handleFeatureClick = useCallback((content: SidePanelContent) => {
+    setSidePanelContent(content);
+  }, []);
+
+  const handleClosePanel = useCallback(() => {
+    setSidePanelContent(null);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Header />
+
+      <main style={{ paddingTop: 'var(--header-height)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <AboutSection />
+
+        <div style={{ display: 'flex', flex: 1, position: 'relative', minHeight: 'var(--map-min-height)' }}>
+          <MapEmbed
+            onFeatureClick={handleFeatureClick}
+            visibleLayers={visibleLayers}
+          />
+          <LayerPanel
+            visible={visibleLayers}
+            onToggle={handleToggleLayer}
+          />
+          <SidePanel
+            content={sidePanelContent}
+            onClose={handleClosePanel}
+          />
+        </div>
+
+        <NewsFeed />
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
