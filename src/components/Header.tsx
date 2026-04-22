@@ -21,7 +21,7 @@ export default function Header() {
         }}>
           {t('site.title')}
         </span>
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.02em' }}>
+        <span className="header-subtitle" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.02em' }}>
           {t('site.subtitle')}
         </span>
       </div>

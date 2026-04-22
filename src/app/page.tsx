@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { LAYER_CONFIGS } from '@/lib/layers';
 import { LayerId, SidePanelContent } from '@/lib/types';
 import Header from '@/components/Header';
@@ -19,6 +19,15 @@ function defaultVisibility(): Record<LayerId, boolean> {
 export default function Home() {
   const [visibleLayers, setVisibleLayers] = useState<Record<LayerId, boolean>>(defaultVisibility);
   const [sidePanelContent, setSidePanelContent] = useState<SidePanelContent | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const handleToggleLayer = useCallback((id: LayerId) => {
     setVisibleLayers(prev => ({ ...prev, [id]: !prev[id] }));
@@ -39,20 +48,33 @@ export default function Home() {
       <main style={{ paddingTop: 'var(--header-height)', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <AboutSection />
 
-        <div style={{ display: 'flex', flex: 1, position: 'relative', minHeight: 'var(--map-min-height)' }}>
+        <div
+          className="map-row"
+          style={{ display: 'flex', flex: 1, position: 'relative', minHeight: 'var(--map-min-height)' }}
+        >
           <MapEmbed
             onFeatureClick={handleFeatureClick}
             visibleLayers={visibleLayers}
           />
-          <LayerPanel
-            visible={visibleLayers}
-            onToggle={handleToggleLayer}
-          />
+          {!isMobile && (
+            <LayerPanel
+              visible={visibleLayers}
+              onToggle={handleToggleLayer}
+            />
+          )}
           <SidePanel
             content={sidePanelContent}
             onClose={handleClosePanel}
           />
         </div>
+
+        {isMobile && (
+          <LayerPanel
+            visible={visibleLayers}
+            onToggle={handleToggleLayer}
+            isMobile
+          />
+        )}
 
         <NewsFeed />
       </main>

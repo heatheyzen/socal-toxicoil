@@ -53,3 +53,75 @@ body {
 }
 h1, h2, h3, h4 { font-family: var(--font-display); }
 .arcgis-map-container .esri-ui { z-index: 10; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+/* Mobile: layer panel becomes a bottom sheet */
+@media (max-width: 767px) {
+  :root {
+    --header-height: 52px;
+    --map-min-height: 340px;
+    --side-panel-width: 100vw;
+  }
+
+  /* Layer panel bottom sheet */
+  .layer-panel-mobile {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    max-height: 52vh;
+    border-left: none !important;
+    border-top: 2px solid var(--color-teal) !important;
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--shadow-lg);
+    z-index: 60;
+    overflow-y: auto;
+  }
+
+  /* Map row stacks vertically */
+  .map-row {
+    flex-direction: column !important;
+  }
+
+  /* Side panel full-width on mobile */
+  .side-panel-mobile {
+    width: 100vw !important;
+  }
+
+  /* About section tighter padding */
+  .about-section {
+    padding: 16px !important;
+  }
+
+  /* Footer single column */
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Header subtitle hidden on very small screens */
+  .header-subtitle {
+    display: none;
+  }
+}
+
+/* Tablet: slightly narrower layer panel */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root {
+    --layer-panel-width: 180px;
+    --side-panel-width: 300px;
+  }
+}
+
+/* Focus ring for keyboard nav */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth hover on layer toggles */
+button:not(:disabled):hover {
+  opacity: 0.88;
+}

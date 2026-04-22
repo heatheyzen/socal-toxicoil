@@ -13,7 +13,7 @@ export default function Footer() {
     <footer style={{
       background: 'var(--color-dark)', padding: '36px 28px',
     }}>
-      <div style={{
+      <div className="footer-grid" style={{
         maxWidth: 'var(--max-width)', margin: '0 auto',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',

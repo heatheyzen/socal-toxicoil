@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { LAYER_CONFIGS } from '@/lib/layers';
 import { LayerId } from '@/lib/types';
@@ -6,6 +7,7 @@ import { LayerId } from '@/lib/types';
 interface LayerPanelProps {
   visible: Record<LayerId, boolean>;
   onToggle: (id: LayerId) => void;
+  isMobile?: boolean;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -19,25 +21,65 @@ const PRIORITY_TEXT: Record<string, string> = {
   P2: 'var(--color-grey-400)',
 };
 
-export default function LayerPanel({ visible, onToggle }: LayerPanelProps) {
+export default function LayerPanel({ visible, onToggle, isMobile }: LayerPanelProps) {
   const { t } = useI18n();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  if (isMobile && !mobileOpen) {
+    return (
+      <button
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open layer controls"
+        style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 60,
+          background: 'var(--color-teal)', color: 'white',
+          border: 'none', borderRadius: 28,
+          padding: '10px 18px',
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700, fontSize: 12,
+          boxShadow: 'var(--shadow-lg)',
+          cursor: 'pointer', letterSpacing: '0.04em',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}
+      >
+        ⊞ {t('layers.title')}
+      </button>
+    );
+  }
+
   return (
     <aside
+      className={isMobile ? 'layer-panel-mobile' : ''}
       style={{
-        width: 'var(--layer-panel-width)', background: 'white',
-        borderLeft: '1px solid var(--color-grey-200)',
-        padding: '16px 14px', overflowY: 'auto', flexShrink: 0,
+        width: isMobile ? '100%' : 'var(--layer-panel-width)',
+        background: 'white',
+        borderLeft: isMobile ? 'none' : '1px solid var(--color-grey-200)',
+        padding: '16px 14px',
+        overflowY: 'auto',
+        flexShrink: 0,
       }}
       aria-label="Map layer controls"
     >
-      <p style={{
-        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.1em', color: 'var(--color-grey-400)',
-        marginBottom: 14, paddingBottom: 10,
-        borderBottom: '1px solid var(--color-grey-200)',
-      }}>
-        {t('layers.title')}
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--color-grey-200)' }}>
+        <p style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.1em', color: 'var(--color-grey-400)',
+        }}>
+          {t('layers.title')}
+        </p>
+        {isMobile && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close layer controls"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 16, color: 'var(--color-grey-400)', lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       {LAYER_CONFIGS.map(layer => (
         <div

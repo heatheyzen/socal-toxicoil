@@ -18,6 +18,7 @@ export default function AboutSection() {
   return (
     <section
       aria-label={t('about.sectionTitle')}
+      className="about-section"
       style={{
         background: 'var(--color-teal-light)',
         padding: '24px 28px',

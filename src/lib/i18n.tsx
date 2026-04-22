@@ -19,13 +19,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem('socal-toxicoil-lang');
-    if (stored === 'en' || stored === 'es') setLangState(stored);
+    if (stored === 'en' || stored === 'es') {
+      setLangState(stored);
+      document.documentElement.lang = stored;
+    }
   }, []);
 
   const setLang = useCallback((l: Language) => {
     setLangState(l);
     if (typeof window !== 'undefined') {
       localStorage.setItem('socal-toxicoil-lang', l);
+      document.documentElement.lang = l;
     }
   }, []);
 
