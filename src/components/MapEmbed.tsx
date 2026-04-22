@@ -50,7 +50,8 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       'esri/symbols/SimpleFillSymbol',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ], (esriConfig: any, ArcGISMap: any, MapView: any, FeatureLayer: any, SimpleRenderer: any, SimpleMarkerSymbol: any, SimpleLineSymbol: any, SimpleFillSymbol: any) => {
-      esriConfig.apiKey = process.env.NEXT_PUBLIC_ARCGIS_API_KEY ?? '';
+      // API key only needed for Esri premium services (routing, geocoding).
+      // All layers here are public — sending a key causes "Invalid token" errors.
 
       const layers = LAYER_CONFIGS
         .filter(cfg => cfg.serviceUrl)
