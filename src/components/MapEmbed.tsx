@@ -31,7 +31,7 @@ const TOOLTIP_NAME_FIELDS: Partial<Record<string, string[]>> = {
   OIL_WELLS:  ['WellName', 'Well_Name', 'WELL_NAME', 'Name', 'NAME', 'API'],
   PIPELINE:   ['Name', 'NAME', 'PipeName', 'PipelineName', 'PIPE_NAME'],
   INDIGENOUS: ['NationName', 'Nation', 'TribeName', 'TRIBE_NAME', 'Name', 'NAME'],
-  CALENVIRO:  ['ApeName', 'Tract', 'TRACTCE', 'ZIP', 'Name', 'NAME'],
+  CALENVIRO:  ['ApproxLoc', 'Tract', 'ZIP', 'County'],
   ORGS:       ['OrgName', 'Organization', 'Name', 'NAME'],
   NEWS:       ['title'],
 };
@@ -119,7 +119,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           if (cfg.id === 'CALENVIRO') {
             // Color-coded choropleth by PM2.5 percentile
             renderer = new ClassBreaksRenderer({
-              field: 'PM2_5Pctl',
+              field: 'PM2_5_Pctl',
               defaultSymbol: makeFill(180, 180, 180, 0.12),
               classBreakInfos: [
                 { minValue: 0,  maxValue: 25,  symbol: makeFill(254, 240, 217, 0.55), label: '0–25th pct (low)' },

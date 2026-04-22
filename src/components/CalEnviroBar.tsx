@@ -6,51 +6,71 @@ interface CalEnviroBarProps {
   onClose: () => void;
 }
 
-// Human-readable labels for known CalEnviroScreen 4.0 fields
 const FIELD_LABELS: Record<string, string> = {
-  ApeName:     'Community',
-  Tract:       'Census Tract',
-  ZIP:         'ZIP',
-  County:      'County',
-  CIscore:     'CES Score',
-  CIscore_P:   'CES Pct',
-  CIscorePct:  'CES Pct',
-  PM2_5:       'PM2.5',
-  PM2_5Pctl:   'PM2.5 Pct',
-  Pm25Pctile:  'PM2.5 Pct',
-  Ozone:       'Ozone',
-  OzonePctl:   'Ozone Pct',
-  DieselPM:    'Diesel PM',
-  DieselPMPct: 'Diesel PM Pct',
-  Asthma:      'Asthma Pct',
-  Cancer:      'Cancer Risk Pct',
-  Cardiovasc:  'Cardiovasc Pct',
-  Low_Birth_:  'Low Birthwt Pct',
-  Lead:        'Lead Pct',
-  Poverty:     'Poverty Pct',
-  Unemp:       'Unemployment Pct',
-  Ling_Isol:   'Ling. Isolation Pct',
-  Pop_Char_P:  'Pop. Char. Pct',
-  Tot_Pop:     'Population',
+  ApproxLoc:       'Community',
+  Tract:           'Census Tract',
+  ZIP:             'ZIP',
+  County:          'County',
+  CIscore:         'CES Score',
+  CIscoreP:        'CES Percentile',
+  Pollution:       'Pollution Score',
+  Pollution_Pctl:  'Pollution Pct',
+  PopChar:         'Pop. Char. Score',
+  PopCharP:        'Pop. Char. Pct',
+  PM2_5:           'PM2.5',
+  PM2_5_Pctl:      'PM2.5 Pct',
+  Ozone:           'Ozone',
+  Ozone_Pctl:      'Ozone Pct',
+  Diesel_PM:       'Diesel PM',
+  Diesel_PM_Pctl:  'Diesel PM Pct',
+  Asthma:          'Asthma',
+  Asthma_Pctl:     'Asthma Pct',
+  LowBirthW_Pctl:  'Low Birthwt Pct',
+  Cardiovasc_Pctl: 'Cardiovasc Pct',
+  Lead:            'Lead',
+  Lead_Pctl:       'Lead Pct',
+  Poverty:         'Poverty',
+  Poverty_Pctl:    'Poverty Pct',
+  Unemployment:    'Unemployment',
+  Unemploy_Pctl:   'Unemploy Pct',
+  Ling_Isol:       'Ling. Isolation',
+  Ling_Isol_Pctl:  'Ling. Isol. Pct',
+  HousBurd:        'Housing Burden',
+  HousBurd_Pctl:   'Housing Burden Pct',
+  Haz_Waste:       'Hazardous Waste',
+  Haz_Waste_Pctl:  'Haz. Waste Pct',
+  Cleanups_Pctl:   'Cleanups Pct',
+  GW_Threats_Pctl: 'Groundwater Pct',
+  ImpWaterBodPctl: 'Imp. Water Pct',
+  Solid_Waste_Pctl:'Solid Waste Pct',
+  Tox_Releases_Pctl:'Toxic Releases Pct',
+  Traffic_Pctl:    'Traffic Pct',
+  DrinkingWaterPctl:'Drinking Water Pct',
+  Pesticides_Pctl: 'Pesticides Pct',
+  Population:      'Population',
+  Hispanic:        'Hispanic %',
+  African_American:'Black %',
+  Asian_American:  'Asian %',
+  Native_American: 'Native Am. %',
 };
 
-// Show these fields first in this order
 const PRIORITY = [
-  'ApeName', 'Tract', 'ZIP', 'County',
-  'PM2_5Pctl', 'Pm25Pctile', 'PM2_5',
-  'CIscore_P', 'CIscorePct', 'CIscore',
-  'Asthma', 'Cancer', 'Cardiovasc',
-  'DieselPMPct', 'OzonePctl',
-  'Poverty', 'Unemp', 'Ling_Isol',
-  'Tot_Pop',
+  'ApproxLoc', 'Tract', 'ZIP', 'County',
+  'PM2_5_Pctl', 'PM2_5',
+  'CIscoreP', 'CIscore',
+  'Ozone_Pctl', 'Diesel_PM_Pctl', 'Traffic_Pctl',
+  'Asthma_Pctl', 'Cardiovasc_Pctl', 'LowBirthW_Pctl',
+  'Lead_Pctl', 'Haz_Waste_Pctl', 'Tox_Releases_Pctl',
+  'DrinkingWaterPctl', 'GW_Threats_Pctl',
+  'Pollution_Pctl', 'PopCharP',
+  'Poverty_Pctl', 'Unemploy_Pctl', 'Ling_Isol_Pctl', 'HousBurd_Pctl',
+  'Population',
 ];
 
 const SKIP = new Set([
-  'OBJECTID', 'Shape_Area', 'Shape_Length', 'Shape_Leng',
-  'GlobalID', 'FID', 'SHAPE', 'GEOID', 'geoid',
+  'OBJECTID', 'Shape__Area', 'Shape__Length', 'GlobalID', 'FID', 'SHAPE',
 ]);
 
-// Color-code percentile values 0–100 (higher = worse for health)
 function pctColor(val: number): string {
   if (val >= 75) return '#CC3333';
   if (val >= 50) return '#D96820';
@@ -59,17 +79,16 @@ function pctColor(val: number): string {
 }
 
 function isPctField(key: string): boolean {
-  const k = key.toLowerCase();
-  return k.includes('pct') || k.includes('pctile') || k.endsWith('score');
+  return key.endsWith('_Pctl') || key === 'CIscoreP' || key === 'PopCharP';
 }
 
 export default function CalEnviroBar({ content, onClose }: CalEnviroBarProps) {
   if (!content) return null;
 
   const attrs = content.attributes;
-
-  const header =
-    (attrs['ApeName'] ?? attrs['Tract'] ?? attrs['ZIP'] ?? 'District') as string;
+  const header = String(
+    attrs['ApproxLoc'] ?? attrs['Tract'] ?? attrs['ZIP'] ?? attrs['County'] ?? 'District'
+  );
 
   const entries = Object.entries(attrs)
     .filter(([k, v]) =>
@@ -104,7 +123,6 @@ export default function CalEnviroBar({ content, onClose }: CalEnviroBarProps) {
         boxShadow: '0 -4px 20px rgba(0,0,0,0.14)',
       }}
     >
-      {/* Title block */}
       <div style={{
         background: 'var(--color-teal)',
         color: 'white',
@@ -115,42 +133,22 @@ export default function CalEnviroBar({ content, onClose }: CalEnviroBarProps) {
         flexShrink: 0,
         minWidth: 140,
       }}>
-        <p style={{
-          fontSize: 8, fontWeight: 700, letterSpacing: '0.1em',
-          textTransform: 'uppercase', opacity: 0.8, marginBottom: 3,
-        }}>
+        <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8, marginBottom: 3 }}>
           Air Quality District
         </p>
-        <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-          {header}
-        </p>
+        <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{header}</p>
       </div>
 
-      {/* Scrollable field strip */}
       <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', flex: 1 }}>
         {entries.map(([key, val]) => {
           const numVal = typeof val === 'number' ? val : parseFloat(String(val));
           const isPercentile = !isNaN(numVal) && numVal >= 0 && numVal <= 100 && isPctField(key);
           return (
-            <div
-              key={key}
-              style={{
-                padding: '0 16px',
-                borderRight: '1px solid var(--color-grey-100)',
-                flexShrink: 0,
-              }}
-            >
-              <p style={{
-                fontSize: 8, fontWeight: 600, color: 'var(--color-grey-400)',
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                marginBottom: 4, whiteSpace: 'nowrap',
-              }}>
+            <div key={key} style={{ padding: '0 16px', borderRight: '1px solid var(--color-grey-100)', flexShrink: 0 }}>
+              <p style={{ fontSize: 8, fontWeight: 600, color: 'var(--color-grey-400)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>
                 {FIELD_LABELS[key] ?? key}
               </p>
-              <p style={{
-                fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                color: isPercentile ? pctColor(numVal) : 'var(--color-dark)',
-              }}>
+              <p style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: isPercentile ? pctColor(numVal) : 'var(--color-dark)' }}>
                 {isPercentile ? `${Math.round(numVal)}th` : String(val)}
               </p>
             </div>
@@ -158,15 +156,10 @@ export default function CalEnviroBar({ content, onClose }: CalEnviroBarProps) {
         })}
       </div>
 
-      {/* Dismiss */}
       <button
         onClick={onClose}
         aria-label="Dismiss district panel"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          padding: '0 16px', color: 'var(--color-grey-400)',
-          fontSize: 18, flexShrink: 0, alignSelf: 'center',
-        }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 16px', color: 'var(--color-grey-400)', fontSize: 18, flexShrink: 0, alignSelf: 'center' }}
       >
         ✕
       </button>
