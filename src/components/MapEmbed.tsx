@@ -120,12 +120,12 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             // Color-coded choropleth by PM2.5 percentile
             renderer = new ClassBreaksRenderer({
               field: 'PM2_5_Pctl',
-              defaultSymbol: makeFill(180, 180, 180, 0.50),
+              defaultSymbol: makeFill(180, 180, 180, 0.35),
               classBreakInfos: [
-                { minValue: 0,  maxValue: 25,  symbol: makeFill(254, 240, 217, 0.50), label: '0–25th pct (low)' },
-                { minValue: 25, maxValue: 50,  symbol: makeFill(253, 190,  90, 0.50), label: '25–50th pct' },
-                { minValue: 50, maxValue: 75,  symbol: makeFill(240,  90,  40, 0.50), label: '50–75th pct' },
-                { minValue: 75, maxValue: 101, symbol: makeFill(180,  30,  30, 0.50), label: '75–100th pct (high)' },
+                { minValue: 0,  maxValue: 25,  symbol: makeFill(254, 240, 217, 0.35), label: '0–25th pct (low)' },
+                { minValue: 25, maxValue: 50,  symbol: makeFill(253, 190,  90, 0.35), label: '25–50th pct' },
+                { minValue: 50, maxValue: 75,  symbol: makeFill(240,  90,  40, 0.35), label: '50–75th pct' },
+                { minValue: 75, maxValue: 101, symbol: makeFill(180,  30,  30, 0.35), label: '75–100th pct (high)' },
               ],
             });
           } else {
@@ -248,7 +248,17 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           } else {
             layerMapRef.current.forEach((l, id) => { if (l === graphic.layer) foundId = id; });
           }
-          if (!foundId) { setTooltip(null); return; }
+          if (!foundId || foundId === 'INDIGENOUS') { setTooltip(null); return; }
+
+          // CalEnviroScreen: show district name + ZIP code
+          if (foundId === 'CALENVIRO') {
+            const district = String(attrs['ApproxLoc'] ?? attrs['Tract'] ?? '').trim();
+            const zip = String(attrs['ZIP'] ?? '').trim();
+            const parts = [district, zip ? `ZIP ${zip}` : ''].filter(Boolean);
+            const calName = parts.join(' · ') || 'Census Tract';
+            setTooltip({ x: event.x, y: event.y, name: calName, sub: LAYER_SUBLABEL['CALENVIRO'] ?? '' });
+            return;
+          }
 
           const name = pickName(attrs, foundId);
           const sub = LAYER_SUBLABEL[foundId] ?? '';
@@ -304,7 +314,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
         const hitLayer = graphic.layer;
         let foundId: LayerId | null = null;
         layerMapRef.current.forEach((l, id) => { if (l === hitLayer) foundId = id; });
-        if (!foundId) return;
+        if (!foundId || foundId === 'INDIGENOUS') return;
 
         onFeatureClickRef.current({ layerId: foundId, attributes: graphic.attributes ?? {} });
       });
