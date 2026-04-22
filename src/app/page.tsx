@@ -7,6 +7,7 @@ import AboutSection from '@/components/AboutSection';
 import MapEmbed from '@/components/MapEmbed';
 import LayerPanel from '@/components/LayerPanel';
 import SidePanel from '@/components/SidePanel';
+import CalEnviroBar from '@/components/CalEnviroBar';
 import NewsFeed from '@/components/NewsFeed';
 import Footer from '@/components/Footer';
 
@@ -19,6 +20,7 @@ function defaultVisibility(): Record<LayerId, boolean> {
 export default function Home() {
   const [visibleLayers, setVisibleLayers] = useState<Record<LayerId, boolean>>(defaultVisibility);
   const [sidePanelContent, setSidePanelContent] = useState<SidePanelContent | null>(null);
+  const [calEnviroContent, setCalEnviroContent] = useState<SidePanelContent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -34,11 +36,19 @@ export default function Home() {
   }, []);
 
   const handleFeatureClick = useCallback((content: SidePanelContent) => {
-    setSidePanelContent(content);
+    if (content.layerId === 'CALENVIRO') {
+      setCalEnviroContent(content);
+    } else {
+      setSidePanelContent(content);
+    }
   }, []);
 
   const handleClosePanel = useCallback(() => {
     setSidePanelContent(null);
+  }, []);
+
+  const handleCloseCalEnviro = useCallback(() => {
+    setCalEnviroContent(null);
   }, []);
 
   return (
@@ -65,6 +75,10 @@ export default function Home() {
           <SidePanel
             content={sidePanelContent}
             onClose={handleClosePanel}
+          />
+          <CalEnviroBar
+            content={calEnviroContent}
+            onClose={handleCloseCalEnviro}
           />
         </div>
 
