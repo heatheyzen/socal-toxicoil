@@ -131,7 +131,7 @@ export default function LayerPanel({ visible, onToggle, isMobile }: LayerPanelPr
 
       <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--color-grey-200)' }}>
         <p style={{ fontSize: 10, color: 'var(--color-grey-400)', lineHeight: 1.6 }}>
-          ⊘ {t('layers.deferred')}: News Feed · Incident Posts
+          ⊘ {t('layers.deferred')}: Incident Posts
         </p>
       </div>
     </aside>

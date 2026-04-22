@@ -6,7 +6,8 @@ export type LayerId =
   | 'CALENVIRO'
   | 'PIPELINE'
   | 'INDIGENOUS'
-  | 'ORGS';
+  | 'ORGS'
+  | 'NEWS';
 
 export type LayerPriority = 'P0' | 'P1' | 'P2';
 
@@ -32,4 +33,6 @@ export interface NewsItem {
   pubDate: string;
   source: string;
   description: string;
+  lat?: number;
+  lng?: number;
 }

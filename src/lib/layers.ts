@@ -61,4 +61,14 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     defaultVisible: false,
     deferred: false,
   },
+  {
+    id: 'NEWS',
+    nameKey: 'layers.news',
+    serviceUrl: '',
+    priority: 'P1',
+    color: '#CC3333',
+    symbolType: 'point',
+    defaultVisible: true,
+    deferred: false,
+  },
 ];

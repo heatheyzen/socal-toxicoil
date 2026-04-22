@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import { SidePanelContent, LayerId } from '@/lib/types';
+import { SidePanelContent, LayerId, NewsItem } from '@/lib/types';
 import { LAYER_CONFIGS } from '@/lib/layers';
 
 const ARCGIS_CDN = 'https://js.arcgis.com/4.32/';
@@ -25,6 +25,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layerMapRef = useRef<Map<LayerId, any>>(new Map());
   const onFeatureClickRef = useRef(onFeatureClick);
+  const newsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
   const [layerErrors, setLayerErrors] = useState<string[]>([]);
 
@@ -44,18 +45,19 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       'esri/Map',
       'esri/views/MapView',
       'esri/layers/FeatureLayer',
+      'esri/layers/GraphicsLayer',
+      'esri/Graphic',
+      'esri/geometry/Point',
       'esri/renderers/SimpleRenderer',
       'esri/symbols/SimpleMarkerSymbol',
       'esri/symbols/SimpleLineSymbol',
       'esri/symbols/SimpleFillSymbol',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ], (esriConfig: any, ArcGISMap: any, MapView: any, FeatureLayer: any, SimpleRenderer: any, SimpleMarkerSymbol: any, SimpleLineSymbol: any, SimpleFillSymbol: any) => {
-      // API key only needed for Esri premium services (routing, geocoding).
-      // All layers here are public — sending a key causes "Invalid token" errors.
+    ], (esriConfig: any, ArcGISMap: any, MapView: any, FeatureLayer: any, GraphicsLayer: any, Graphic: any, Point: any, SimpleRenderer: any, SimpleMarkerSymbol: any, SimpleLineSymbol: any, SimpleFillSymbol: any) => {
+      void esriConfig;
 
-      // Render order: CalEnviroScreen base first, then other polygons, polylines, points
       const ORDER = { polygon: 1, polyline: 2, point: 3 };
-      const layers = [...LAYER_CONFIGS]
+      const featureLayers = [...LAYER_CONFIGS]
         .filter(cfg => cfg.serviceUrl)
         .sort((a, b) => {
           if (a.id === 'CALENVIRO') return -1;
@@ -118,7 +120,13 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           return layer;
         });
 
-      const map = new ArcGISMap({ basemap: 'gray', layers });
+      // News GraphicsLayer — rendered on top of all feature layers
+      const newsLayer = new GraphicsLayer({
+        visible: LAYER_CONFIGS.find(c => c.id === 'NEWS')?.defaultVisible ?? true,
+      });
+      layerMapRef.current.set('NEWS', newsLayer);
+
+      const map = new ArcGISMap({ basemap: 'gray', layers: [...featureLayers, newsLayer] });
 
       const view = new MapView({
         container: mapDivRef.current!,
@@ -130,17 +138,61 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
 
       viewRef.current = view;
 
+      // Fetch news articles and place markers on the map
+      const newsSymbol = new SimpleMarkerSymbol({
+        color: '#CC3333',
+        size: 16,
+        style: 'square',
+        outline: { color: 'white', width: 1.5 },
+      });
+
+      const fetchNews = async () => {
+        try {
+          const res = await fetch('/api/news');
+          if (!res.ok) return;
+          const { items } = await res.json() as { items: NewsItem[] };
+          newsLayer.removeAll();
+          for (const item of items) {
+            if (item.lat == null || item.lng == null) continue;
+            newsLayer.add(new Graphic({
+              geometry: new Point({ latitude: item.lat, longitude: item.lng }),
+              symbol: newsSymbol,
+              attributes: { _type: 'news', ...item },
+            }));
+          }
+        } catch { /* silently fail */ }
+      };
+
+      fetchNews();
+      newsIntervalRef.current = setInterval(fetchNews, 120_000);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       view.on('click', async (event: any) => {
         const response = await view.hitTest(event);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const hit = response.results.find((r: any) =>
-          r.type === 'graphic' && r.graphic?.layer?.type === 'feature'
+          r.type === 'graphic' && r.graphic?.attributes &&
+          (r.graphic?.layer?.type === 'feature' || r.graphic?.attributes?._type === 'news')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ) as any;
         if (!hit) return;
 
         const { graphic } = hit;
+
+        if (graphic.attributes?._type === 'news') {
+          onFeatureClickRef.current({
+            layerId: 'NEWS',
+            attributes: {
+              Title: graphic.attributes.title,
+              Source: graphic.attributes.source,
+              Published: graphic.attributes.pubDate,
+              Summary: graphic.attributes.description,
+              Link: graphic.attributes.link,
+            },
+          });
+          return;
+        }
+
         const hitLayer = graphic.layer;
         let foundId: LayerId | null = null;
         layerMapRef.current.forEach((l, id) => {
@@ -156,6 +208,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
     });
 
     return () => {
+      if (newsIntervalRef.current) clearInterval(newsIntervalRef.current);
       viewRef.current?.destroy();
       viewRef.current = null;
       layerMapRef.current.clear();

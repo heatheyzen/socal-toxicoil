@@ -1,11 +1,174 @@
 import { NextResponse } from 'next/server';
-// TODO Milestone Step 6: Parse NEWS_RSS_URLS env var, fetch each RSS feed,
-// merge results sorted by date, return top 9 as JSON NewsItem[].
-export const runtime = 'edge';
+import Parser from 'rss-parser';
+import { NewsItem } from '@/lib/types';
+
+// Node.js runtime — rss-parser requires Node APIs
+const parser = new Parser({ timeout: 8000 });
+
+const RSS_URL =
+  'https://news.google.com/rss/search?q=oil+spill+OR+%22oil+leak%22+%22Los+Angeles%22+OR+%22Ventura%22+OR+%22Orange+County%22&hl=en-US&gl=US&ceid=US:en';
+
+const OIL_KEYWORDS = [
+  'oil spill', 'oil leak', 'petroleum spill', 'fuel spill',
+  'crude oil', 'pipeline leak', 'oil slick', 'oil discharge',
+  'chemical spill', 'oil contamination',
+];
+
+// Sorted longest-first so "orange county" matches before "orange", etc.
+const GEOCODE: [string, { lat: number; lng: number }][] = ([
+  // LA County
+  ['port of los angeles',    { lat: 33.7283, lng: -118.2747 }],
+  ['port of long beach',     { lat: 33.7523, lng: -118.2165 }],
+  ['rancho palos verdes',    { lat: 33.7445, lng: -118.3870 }],
+  ['marina del rey',         { lat: 33.9800, lng: -118.4517 }],
+  ['santa monica',           { lat: 34.0195, lng: -118.4912 }],
+  ['manhattan beach',        { lat: 33.8847, lng: -118.4109 }],
+  ['hermosa beach',          { lat: 33.8622, lng: -118.3995 }],
+  ['redondo beach',          { lat: 33.8492, lng: -118.3884 }],
+  ['playa del rey',          { lat: 33.9586, lng: -118.4456 }],
+  ['north hollywood',        { lat: 34.1872, lng: -118.3830 }],
+  ['palos verdes',           { lat: 33.7445, lng: -118.4043 }],
+  ['woodland hills',         { lat: 34.1683, lng: -118.6058 }],
+  ['agoura hills',           { lat: 34.1536, lng: -118.7606 }],
+  ['sherman oaks',           { lat: 34.1503, lng: -118.4489 }],
+  ['santa fe springs',       { lat: 33.9428, lng: -118.0592 }],
+  ['signal hill',            { lat: 33.8042, lng: -118.1684 }],
+  ['rolling hills',          { lat: 33.7595, lng: -118.3554 }],
+  ['culver city',            { lat: 34.0211, lng: -118.3965 }],
+  ['studio city',            { lat: 34.1392, lng: -118.3878 }],
+  ['long beach',             { lat: 33.7701, lng: -118.1937 }],
+  ['los angeles',            { lat: 34.0522, lng: -118.2437 }],
+  ['san pedro',              { lat: 33.7361, lng: -118.2922 }],
+  ['el segundo',             { lat: 33.9164, lng: -118.4165 }],
+  ['wilmington',             { lat: 33.7792, lng: -118.2673 }],
+  ['torrance',               { lat: 33.8358, lng: -118.3406 }],
+  ['inglewood',              { lat: 33.9617, lng: -118.3531 }],
+  ['hawthorne',              { lat: 33.9164, lng: -118.3525 }],
+  ['gardena',                { lat: 33.8883, lng: -118.3089 }],
+  ['compton',                { lat: 33.8958, lng: -118.2201 }],
+  ['lakewood',               { lat: 33.8536, lng: -118.1340 }],
+  ['carson',                 { lat: 33.8317, lng: -118.2820 }],
+  ['malibu',                 { lat: 34.0259, lng: -118.7798 }],
+  ['burbank',                { lat: 34.1808, lng: -118.3090 }],
+  ['glendale',               { lat: 34.1425, lng: -118.2551 }],
+  ['pasadena',               { lat: 34.1478, lng: -118.1445 }],
+  ['calabasas',              { lat: 34.1358, lng: -118.6601 }],
+  ['bellflower',             { lat: 33.8881, lng: -118.1170 }],
+  ['paramount',              { lat: 33.8894, lng: -118.1597 }],
+  ['norwalk',                { lat: 33.9022, lng: -118.0817 }],
+  ['downey',                 { lat: 33.9401, lng: -118.1326 }],
+  ['cerritos',               { lat: 33.8584, lng: -118.0650 }],
+  ['whittier',               { lat: 33.9792, lng: -118.0328 }],
+  ['pomona',                 { lat: 34.0553, lng: -117.7490 }],
+  ['venice',                 { lat: 33.9850, lng: -118.4695 }],
+  // Ventura County
+  ['santa barbara channel',  { lat: 34.10,   lng: -119.70   }],
+  ['channel islands harbor', { lat: 34.1597, lng: -119.2183 }],
+  ['channel islands',        { lat: 34.0069, lng: -119.7785 }],
+  ['ventura county',         { lat: 34.2746, lng: -119.2290 }],
+  ['thousand oaks',          { lat: 34.1706, lng: -118.8376 }],
+  ['port hueneme',           { lat: 34.1478, lng: -119.1951 }],
+  ['santa paula',            { lat: 34.3541, lng: -119.0590 }],
+  ['simi valley',            { lat: 34.2694, lng: -118.7815 }],
+  ['camarillo',              { lat: 34.2164, lng: -119.0376 }],
+  ['point mugu',             { lat: 34.1153, lng: -119.1142 }],
+  ['moorpark',               { lat: 34.2856, lng: -118.8820 }],
+  ['fillmore',               { lat: 34.3992, lng: -118.9176 }],
+  ['ventura',                { lat: 34.2746, lng: -119.2290 }],
+  ['oxnard',                 { lat: 34.1975, lng: -119.1771 }],
+  ['ojai',                   { lat: 34.4480, lng: -119.2429 }],
+  // Orange County
+  ['orange county',          { lat: 33.7455, lng: -117.8677 }],
+  ['huntington beach',       { lat: 33.6595, lng: -117.9988 }],
+  ['laguna niguel',          { lat: 33.5225, lng: -117.7081 }],
+  ['laguna hills',           { lat: 33.5964, lng: -117.7117 }],
+  ['laguna beach',           { lat: 33.5422, lng: -117.7831 }],
+  ['laguna woods',           { lat: 33.6097, lng: -117.7225 }],
+  ['aliso viejo',            { lat: 33.5765, lng: -117.7253 }],
+  ['mission viejo',          { lat: 33.6000, lng: -117.6719 }],
+  ['newport beach',          { lat: 33.6189, lng: -117.9289 }],
+  ['dana point',             { lat: 33.4669, lng: -117.6981 }],
+  ['san clemente',           { lat: 33.4270, lng: -117.6120 }],
+  ['seal beach',             { lat: 33.7414, lng: -118.1047 }],
+  ['costa mesa',             { lat: 33.6411, lng: -117.9187 }],
+  ['santa ana',              { lat: 33.7455, lng: -117.8677 }],
+  ['garden grove',           { lat: 33.7743, lng: -117.9378 }],
+  ['buena park',             { lat: 33.8675, lng: -117.9981 }],
+  ['westminster',            { lat: 33.7514, lng: -117.9940 }],
+  ['lake forest',            { lat: 33.6469, lng: -117.6892 }],
+  ['fountain valley',        { lat: 33.7092, lng: -117.9536 }],
+  ['yorba linda',            { lat: 33.8886, lng: -117.8131 }],
+  ['los alamitos',           { lat: 33.8025, lng: -118.0731 }],
+  ['la habra',               { lat: 33.9319, lng: -117.9462 }],
+  ['fullerton',              { lat: 33.8704, lng: -117.9242 }],
+  ['placentia',              { lat: 33.8725, lng: -117.8703 }],
+  ['anaheim',                { lat: 33.8353, lng: -117.9145 }],
+  ['cypress',                { lat: 33.8170, lng: -118.0373 }],
+  ['irvine',                 { lat: 33.6846, lng: -117.8265 }],
+  ['tustin',                 { lat: 33.7458, lng: -117.8261 }],
+  ['brea',                   { lat: 33.9167, lng: -117.9003 }],
+  ['orange',                 { lat: 33.7879, lng: -117.8531 }],
+  // Regional fallbacks
+  ['southern california',    { lat: 33.90,   lng: -118.20   }],
+  ['south coast',            { lat: 33.80,   lng: -118.20   }],
+  ['socal',                  { lat: 33.90,   lng: -118.20   }],
+] as [string, { lat: number; lng: number }][]).sort((a, b) => b[0].length - a[0].length);
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function geocode(text: string): { lat: number; lng: number } | null {
+  const lower = text.toLowerCase();
+  for (const [place, coords] of GEOCODE) {
+    if (lower.includes(place)) return coords;
+  }
+  return null;
+}
+
+function isOilRelated(title: string, desc: string): boolean {
+  const text = (title + ' ' + desc).toLowerCase();
+  return OIL_KEYWORDS.some(kw => text.includes(kw));
+}
 
 export async function GET() {
-  return NextResponse.json({
-    items: [],
-    message: 'News feed — implement in Milestone Step 6',
-  });
+  try {
+    const feed = await parser.parseURL(RSS_URL);
+    const items: NewsItem[] = [];
+
+    for (const entry of feed.items) {
+      const title = entry.title ?? '';
+      const rawDesc = entry.contentSnippet ?? (entry as Record<string, string>)['content'] ?? '';
+      const description = stripHtml(rawDesc).slice(0, 300);
+
+      if (!isOilRelated(title, description)) continue;
+
+      const geo = geocode(title + ' ' + description);
+      if (!geo) continue;
+
+      const source =
+        (entry as Record<string, string>)['dc:creator'] ??
+        entry.creator ??
+        feed.title ??
+        'News';
+
+      items.push({
+        title,
+        link: entry.link ?? '',
+        pubDate: entry.pubDate ?? entry.isoDate ?? '',
+        source,
+        description,
+        lat: geo.lat,
+        lng: geo.lng,
+      });
+
+      if (items.length >= 9) break;
+    }
+
+    return NextResponse.json({ items }, {
+      headers: { 'Cache-Control': 'public, max-age=90, stale-while-revalidate=60' },
+    });
+  } catch (err) {
+    return NextResponse.json({ items: [], error: String(err) }, { status: 200 });
+  }
 }

@@ -86,9 +86,20 @@ export default function SidePanel({ content, onClose }: SidePanelProps) {
                   }}>
                     {key}
                   </p>
-                  <p style={{ fontSize: 13, color: 'var(--color-dark)' }}>
-                    {val ?? '—'}
-                  </p>
+                  {typeof val === 'string' && val.startsWith('http') ? (
+                    <a
+                      href={val}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600 }}
+                    >
+                      {t('sidePanel.learnMore')}
+                    </a>
+                  ) : (
+                    <p style={{ fontSize: 13, color: 'var(--color-dark)' }}>
+                      {val ?? '—'}
+                    </p>
+                  )}
                 </div>
               ))}
               <p style={{
