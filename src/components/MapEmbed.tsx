@@ -1,5 +1,4 @@
 'use client';
-import '@arcgis/core/assets/esri/themes/light/main.css';
 import { useEffect, useRef } from 'react';
 import { SidePanelContent, LayerId } from '@/lib/types';
 import { LAYER_CONFIGS } from '@/lib/layers';
@@ -58,6 +57,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       if (destroyed) return;
 
       esriConfig.apiKey = process.env.NEXT_PUBLIC_ARCGIS_API_KEY ?? '';
+      esriConfig.assetsPath = 'https://cdn.jsdelivr.net/npm/@arcgis/core@5.0.17/assets/';
 
       const layers = LAYER_CONFIGS
         .filter(cfg => cfg.serviceUrl)
