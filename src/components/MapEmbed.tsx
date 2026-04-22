@@ -1,7 +1,10 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import { SidePanelContent, LayerId } from '@/lib/types';
 import { LAYER_CONFIGS } from '@/lib/layers';
+
+const ARCGIS_CDN = 'https://js.arcgis.com/4.32/';
 
 interface MapEmbedProps {
   onFeatureClick: (content: SidePanelContent) => void;
@@ -22,42 +25,31 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layerMapRef = useRef<Map<LayerId, any>>(new Map());
   const onFeatureClickRef = useRef(onFeatureClick);
+  const [sdkReady, setSdkReady] = useState(false);
 
-  // Keep callback ref current without re-initializing the map
   useEffect(() => {
     onFeatureClickRef.current = onFeatureClick;
   });
 
-  // Initialize map once on mount
   useEffect(() => {
-    if (!mapDivRef.current || viewRef.current) return;
-    let destroyed = false;
+    if (!sdkReady || !mapDivRef.current || viewRef.current) return;
 
-    (async () => {
-      const [
-        { default: esriConfig },
-        { default: ArcGISMap },
-        { default: MapView },
-        { default: FeatureLayer },
-        { default: SimpleRenderer },
-        { default: SimpleMarkerSymbol },
-        { default: SimpleLineSymbol },
-        { default: SimpleFillSymbol },
-      ] = await Promise.all([
-        import('@arcgis/core/config'),
-        import('@arcgis/core/Map'),
-        import('@arcgis/core/views/MapView'),
-        import('@arcgis/core/layers/FeatureLayer'),
-        import('@arcgis/core/renderers/SimpleRenderer'),
-        import('@arcgis/core/symbols/SimpleMarkerSymbol'),
-        import('@arcgis/core/symbols/SimpleLineSymbol'),
-        import('@arcgis/core/symbols/SimpleFillSymbol'),
-      ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const amdRequire = (window as any).require;
+    if (!amdRequire) return;
 
-      if (destroyed) return;
-
+    amdRequire([
+      'esri/config',
+      'esri/Map',
+      'esri/views/MapView',
+      'esri/layers/FeatureLayer',
+      'esri/renderers/SimpleRenderer',
+      'esri/symbols/SimpleMarkerSymbol',
+      'esri/symbols/SimpleLineSymbol',
+      'esri/symbols/SimpleFillSymbol',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ], (esriConfig: any, ArcGISMap: any, MapView: any, FeatureLayer: any, SimpleRenderer: any, SimpleMarkerSymbol: any, SimpleLineSymbol: any, SimpleFillSymbol: any) => {
       esriConfig.apiKey = process.env.NEXT_PUBLIC_ARCGIS_API_KEY ?? '';
-      esriConfig.assetsPath = 'https://cdn.jsdelivr.net/npm/@arcgis/core@5.0.17/assets/';
 
       const layers = LAYER_CONFIGS
         .filter(cfg => cfg.serviceUrl)
@@ -95,16 +87,16 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       const view = new MapView({
         container: mapDivRef.current!,
         map,
-        center: [-118.5, 33.8], // Southern California coast
+        center: [-118.5, 33.8],
         zoom: 9,
         ui: { components: ['zoom', 'compass'] },
       });
 
       viewRef.current = view;
 
-      view.on('click', async (event: unknown) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await view.hitTest(event as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      view.on('click', async (event: any) => {
+        const response = await view.hitTest(event);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const hit = response.results.find((r: any) =>
           r.type === 'graphic' && r.graphic?.layer?.type === 'feature'
@@ -114,7 +106,6 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
 
         const { graphic } = hit;
         const hitLayer = graphic.layer;
-
         let foundId: LayerId | null = null;
         layerMapRef.current.forEach((l, id) => {
           if (l === hitLayer) foundId = id;
@@ -126,17 +117,15 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           attributes: graphic.attributes ?? {},
         });
       });
-    })().catch(console.error);
+    });
 
     return () => {
-      destroyed = true;
       viewRef.current?.destroy();
       viewRef.current = null;
       layerMapRef.current.clear();
     };
-  }, []);
+  }, [sdkReady]);
 
-  // Sync layer visibility when props change
   useEffect(() => {
     layerMapRef.current.forEach((layer, id) => {
       layer.visible = visibleLayers[id] ?? false;
@@ -144,10 +133,18 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
   }, [visibleLayers]);
 
   return (
-    <div
-      ref={mapDivRef}
-      style={{ flex: 1, minHeight: 'var(--map-min-height)' }}
-      className="arcgis-map-container"
-    />
+    <>
+      <link rel="stylesheet" href={`${ARCGIS_CDN}esri/themes/light/main.css`} />
+      <Script
+        src={`${ARCGIS_CDN}init.js`}
+        strategy="afterInteractive"
+        onLoad={() => setSdkReady(true)}
+      />
+      <div
+        ref={mapDivRef}
+        style={{ flex: 1, minHeight: 'var(--map-min-height)', width: '100%' }}
+        className="arcgis-map-container"
+      />
+    </>
   );
 }
