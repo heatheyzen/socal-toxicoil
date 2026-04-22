@@ -1,60 +1,153 @@
 'use client';
+import '@arcgis/core/assets/esri/themes/light/main.css';
+import { useEffect, useRef } from 'react';
 import { SidePanelContent, LayerId } from '@/lib/types';
+import { LAYER_CONFIGS } from '@/lib/layers';
 
 interface MapEmbedProps {
   onFeatureClick: (content: SidePanelContent) => void;
   visibleLayers: Record<LayerId, boolean>;
 }
 
-export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProps) {
-  // TODO Milestone Step 4: Replace this placeholder with the ArcGIS Maps SDK
-  // integration. Use LAYER_CONFIGS and env vars for each layer's serviceUrl.
-  // Wire feature click events to call onFeatureClick() with SidePanelContent.
-  // Toggle layer visibility by watching visibleLayers prop.
+function hexToRgba(hex: string, alpha: number): [number, number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b, alpha];
+}
 
-  const handleTestClick = () => {
-    onFeatureClick({
-      layerId: 'OIL_RIGS',
-      attributes: {
-        PLATFORM_NAME: 'Ellen Platform (test)',
-        OPERATOR: 'Internago Corp',
-        INSTALL_YEAR: 1987,
-        WATER_DEPTH_FT: 264,
-      },
+export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProps) {
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const viewRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const layerMapRef = useRef<Map<LayerId, any>>(new Map());
+  const onFeatureClickRef = useRef(onFeatureClick);
+
+  // Keep callback ref current without re-initializing the map
+  useEffect(() => {
+    onFeatureClickRef.current = onFeatureClick;
+  });
+
+  // Initialize map once on mount
+  useEffect(() => {
+    if (!mapDivRef.current || viewRef.current) return;
+    let destroyed = false;
+
+    (async () => {
+      const [
+        { default: esriConfig },
+        { default: ArcGISMap },
+        { default: MapView },
+        { default: FeatureLayer },
+        { default: SimpleRenderer },
+        { default: SimpleMarkerSymbol },
+        { default: SimpleLineSymbol },
+        { default: SimpleFillSymbol },
+      ] = await Promise.all([
+        import('@arcgis/core/config'),
+        import('@arcgis/core/Map'),
+        import('@arcgis/core/views/MapView'),
+        import('@arcgis/core/layers/FeatureLayer'),
+        import('@arcgis/core/renderers/SimpleRenderer'),
+        import('@arcgis/core/symbols/SimpleMarkerSymbol'),
+        import('@arcgis/core/symbols/SimpleLineSymbol'),
+        import('@arcgis/core/symbols/SimpleFillSymbol'),
+      ]);
+
+      if (destroyed) return;
+
+      esriConfig.apiKey = process.env.NEXT_PUBLIC_ARCGIS_API_KEY ?? '';
+
+      const layers = LAYER_CONFIGS
+        .filter(cfg => cfg.serviceUrl)
+        .map(cfg => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let symbol: any;
+          if (cfg.symbolType === 'point') {
+            symbol = new SimpleMarkerSymbol({
+              color: cfg.color,
+              size: 8,
+              outline: { color: [255, 255, 255, 0.9], width: 1 },
+            });
+          } else if (cfg.symbolType === 'polyline') {
+            symbol = new SimpleLineSymbol({ color: cfg.color, width: 2.5 });
+          } else {
+            symbol = new SimpleFillSymbol({
+              color: hexToRgba(cfg.color, 0.18),
+              outline: { color: cfg.color, width: 1 },
+            });
+          }
+
+          const layer = new FeatureLayer({
+            url: cfg.serviceUrl,
+            renderer: new SimpleRenderer({ symbol }),
+            visible: cfg.defaultVisible,
+            outFields: ['*'],
+          });
+
+          layerMapRef.current.set(cfg.id, layer);
+          return layer;
+        });
+
+      const map = new ArcGISMap({ basemap: 'arcgis/oceans', layers });
+
+      const view = new MapView({
+        container: mapDivRef.current!,
+        map,
+        center: [-118.5, 33.8], // Southern California coast
+        zoom: 9,
+        ui: { components: ['zoom', 'compass'] },
+      });
+
+      viewRef.current = view;
+
+      view.on('click', async (event: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await view.hitTest(event as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hit = response.results.find((r: any) =>
+          r.type === 'graphic' && r.graphic?.layer?.type === 'feature'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ) as any;
+        if (!hit) return;
+
+        const { graphic } = hit;
+        const hitLayer = graphic.layer;
+
+        let foundId: LayerId | null = null;
+        layerMapRef.current.forEach((l, id) => {
+          if (l === hitLayer) foundId = id;
+        });
+        if (!foundId) return;
+
+        onFeatureClickRef.current({
+          layerId: foundId,
+          attributes: graphic.attributes ?? {},
+        });
+      });
+    })().catch(console.error);
+
+    return () => {
+      destroyed = true;
+      viewRef.current?.destroy();
+      viewRef.current = null;
+      layerMapRef.current.clear();
+    };
+  }, []);
+
+  // Sync layer visibility when props change
+  useEffect(() => {
+    layerMapRef.current.forEach((layer, id) => {
+      layer.visible = visibleLayers[id] ?? false;
     });
-  };
+  }, [visibleLayers]);
 
   return (
-    <div style={{
-      flex: 1, minHeight: 'var(--map-min-height)',
-      background: 'linear-gradient(135deg, #C5DCE8 0%, #D4E8F0 60%, #BED5E2 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 16,
-      position: 'relative',
-    }}>
-      <p style={{
-        fontFamily: 'var(--font-display)', fontSize: 15, color: '#5A8A9A',
-        fontWeight: 600,
-      }}>
-        ArcGIS Map Embed
-      </p>
-      <p style={{ fontSize: 12, color: '#7AAABB' }}>
-        Milestone Step 4 — ArcGIS SDK integration
-      </p>
-      <button
-        onClick={handleTestClick}
-        style={{
-          background: 'var(--color-teal)', color: 'white',
-          border: 'none', borderRadius: 6, padding: '8px 16px',
-          fontSize: 12, cursor: 'pointer', fontWeight: 600,
-        }}
-      >
-        Test Side Panel →
-      </button>
-      <p style={{ fontSize: 11, color: '#7AAABB', maxWidth: 280, textAlign: 'center', lineHeight: 1.5 }}>
-        Active layers: {Object.entries(visibleLayers)
-          .filter(([, v]) => v).map(([k]) => k).join(', ') || 'none'}
-      </p>
-    </div>
+    <div
+      ref={mapDivRef}
+      style={{ flex: 1, minHeight: 'var(--map-min-height)' }}
+      className="arcgis-map-container"
+    />
   );
 }
