@@ -53,11 +53,15 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       // API key only needed for Esri premium services (routing, geocoding).
       // All layers here are public — sending a key causes "Invalid token" errors.
 
-      // Render order: polygons first (bottom), then polylines, then points (top)
-      const ORDER = { polygon: 0, polyline: 1, point: 2 };
+      // Render order: CalEnviroScreen base first, then other polygons, polylines, points
+      const ORDER = { polygon: 1, polyline: 2, point: 3 };
       const layers = [...LAYER_CONFIGS]
         .filter(cfg => cfg.serviceUrl)
-        .sort((a, b) => ORDER[a.symbolType] - ORDER[b.symbolType])
+        .sort((a, b) => {
+          if (a.id === 'CALENVIRO') return -1;
+          if (b.id === 'CALENVIRO') return 1;
+          return ORDER[a.symbolType] - ORDER[b.symbolType];
+        })
         .map(cfg => {
           const isCalEnviro = cfg.id === 'CALENVIRO';
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
