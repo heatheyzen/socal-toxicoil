@@ -55,7 +55,7 @@
   "footer": {
     "landAck": "This dashboard was created on the ancestral, unceded territories of the Tongva, Chumash, Acjachemen, and Kizh peoples, whose stewardship of this coastline continues today. We acknowledge their sovereignty and ongoing relationship to this land and sea.",
     "disclaimer": "Created as an academic project. Data sourced from public government and nonprofit sources. Features shown do not constitute endorsement. Emergencies: OSPR 1-800-OILS-911.",
-    "credits": "Created by [YOUR NAME] · Environmental Science · [INSTITUTION] · [YEAR]  |  Built with ArcGIS Online, Next.js, and public data."
+    "credits": "Created by Heather Liu for HP 408 Environmental Health in the Community · University of Southern California · 2026 · Built with ArcGIS Online, Next.js, and public data."
   },
   "lang": {
     "toggle": "ES",

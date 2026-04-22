@@ -55,7 +55,7 @@
   "footer": {
     "landAck": "Este panel fue creado en los territorios ancestrales y no cedidos de los pueblos Tongva, Chumash, Acjachemen y Kizh, cuya gestión de esta costa continúa hoy. Reconocemos su soberanía y su relación continua con esta tierra y el mar.",
     "disclaimer": "Creado como un proyecto académico. Datos provenientes de fuentes gubernamentales y sin fines de lucro disponibles públicamente. Las características mostradas no constituyen un respaldo. Emergencias: OSPR 1-800-OILS-911.",
-    "credits": "Creado por [SU NOMBRE] · Ciencias Ambientales · [INSTITUCIÓN] · [AÑO]  |  Desarrollado con ArcGIS Online, Next.js y datos públicos."
+    "credits": "Creado por Heather Liu para HP 408 Salud Ambiental en la Comunidad · University of Southern California · 2026 · Desarrollado con ArcGIS Online, Next.js y datos públicos."
   },
   "lang": {
     "toggle": "EN",

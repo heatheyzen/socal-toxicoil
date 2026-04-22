@@ -212,18 +212,18 @@ function extractEntryImage(entry: Record<string, unknown>): string | null {
   return null;
 }
 
-// Fetch the article page og:image as a fallback (follows Google News redirect)
-async function fetchNewsImage(link: string): Promise<string | null> {
+async function tryFetchOgImage(url: string): Promise<string | null> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);
-    const res = await fetch(link, {
+    const res = await fetch(url, {
       signal: ctrl.signal,
       redirect: 'follow',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'identity',
       },
     });
     clearTimeout(timer);
@@ -232,7 +232,7 @@ async function fetchNewsImage(link: string): Promise<string | null> {
     const dec = new TextDecoder();
     let html = '';
     try {
-      while (html.length < 24000) {
+      while (html.length < 32000) {
         const { value, done } = await reader.read();
         if (done) break;
         html += dec.decode(value, { stream: true });
@@ -255,6 +255,23 @@ async function fetchNewsImage(link: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// Fetch og:image for a news article.
+// Tries the Google News article page first (/articles/ not /rss/articles/) which
+// has Google-cached thumbnails in server-rendered HTML, then falls back to the
+// publisher URL (which often blocks scrapers).
+async function fetchNewsImage(link: string): Promise<string | null> {
+  const urls: string[] = [];
+  if (link.includes('news.google.com/rss/articles/')) {
+    urls.push(link.replace('news.google.com/rss/articles/', 'news.google.com/articles/'));
+  }
+  urls.push(link);
+  for (const url of urls) {
+    const img = await tryFetchOgImage(url);
+    if (img) return img;
+  }
+  return null;
 }
 
 export async function GET() {

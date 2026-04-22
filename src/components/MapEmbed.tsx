@@ -307,6 +307,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           onFeatureClickRef.current({
             layerId: 'NEWS',
             attributes: {
+              ...(a.imageUrl ? { Image: a.imageUrl } : {}),
               Title: a.title,
               Published: a.pubDate,
               Summary: a.description,

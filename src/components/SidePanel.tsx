@@ -86,7 +86,14 @@ export default function SidePanel({ content, onClose }: SidePanelProps) {
                   }}>
                     {key}
                   </p>
-                  {typeof val === 'string' && val.startsWith('http') ? (
+                  {key === 'Image' && typeof val === 'string' && val.startsWith('http') ? (
+                    <img
+                      src={val}
+                      alt=""
+                      style={{ width: '100%', borderRadius: 6, display: 'block', marginTop: 2 }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : typeof val === 'string' && val.startsWith('http') ? (
                     <a
                       href={val}
                       target="_blank"
