@@ -3,7 +3,15 @@ import Parser from 'rss-parser';
 import { NewsItem } from '@/lib/types';
 
 // Node.js runtime — rss-parser requires Node APIs
-const parser = new Parser({ timeout: 8000 });
+const parser = new Parser({
+  timeout: 8000,
+  customFields: {
+    item: [
+      ['media:content', 'media:content'],
+      ['media:thumbnail', 'media:thumbnail'],
+    ],
+  },
+});
 
 const RSS_URL =
   'https://news.google.com/rss/search?q=oil+spill+OR+%22oil+leak%22+%22Los+Angeles%22+OR+%22Ventura%22+OR+%22Orange+County%22&hl=en-US&gl=US&ceid=US:en';
@@ -179,14 +187,44 @@ function isOilRelated(title: string, desc: string): boolean {
   return OIL_KEYWORDS.some(kw => text.includes(kw));
 }
 
-// Fetch the Google News redirect page and extract its og:image thumbnail
+// Extract image URL directly from RSS entry media fields or content HTML
+function extractEntryImage(entry: Record<string, unknown>): string | null {
+  type MediaObj = { $?: { url?: string }; url?: string } | string;
+  const tryUrl = (m: unknown): string | null => {
+    if (!m) return null;
+    if (typeof m === 'string' && m.startsWith('http')) return m;
+    if (typeof m === 'object') {
+      const o = m as MediaObj;
+      const u = (o as { $?: { url?: string } }).$?.url ?? (o as { url?: string }).url;
+      if (u?.startsWith('http')) return u;
+    }
+    return null;
+  };
+  const fromMedia = tryUrl(entry['media:content']) ?? tryUrl(entry['media:thumbnail']);
+  if (fromMedia) return fromMedia;
+  const enc = entry['enclosure'] as { url?: string } | undefined;
+  if (enc?.url?.startsWith('http')) return enc.url;
+  const content = entry['content'] as string | undefined;
+  if (content) {
+    const m = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (m?.[1]?.startsWith('http')) return m[1];
+  }
+  return null;
+}
+
+// Fetch the article page og:image as a fallback (follows Google News redirect)
 async function fetchNewsImage(link: string): Promise<string | null> {
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4000);
+    const timer = setTimeout(() => ctrl.abort(), 5000);
     const res = await fetch(link, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible)' },
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
     });
     clearTimeout(timer);
     if (!res.ok || !res.body) return null;
@@ -194,7 +232,7 @@ async function fetchNewsImage(link: string): Promise<string | null> {
     const dec = new TextDecoder();
     let html = '';
     try {
-      while (html.length < 12000) {
+      while (html.length < 24000) {
         const { value, done } = await reader.read();
         if (done) break;
         html += dec.decode(value, { stream: true });
@@ -205,12 +243,13 @@ async function fetchNewsImage(link: string): Promise<string | null> {
     }
     const m =
       html.match(/property=["']og:image["'][^>]*content=["']([^"']{10,})["']/i) ??
-      html.match(/content=["']([^"']{10,})["'][^>]*property=["']og:image["']/i);
+      html.match(/content=["']([^"']{10,})["'][^>]*property=["']og:image["']/i) ??
+      html.match(/name=["']twitter:image["'][^>]*content=["']([^"']{10,})["']/i) ??
+      html.match(/content=["']([^"']{10,})["'][^>]*name=["']twitter:image["']/i);
     if (!m?.[1]) return null;
     const img = m[1];
-    // Google thumbnails: upgrade to higher resolution
     if (img.includes('lh3.googleusercontent.com')) {
-      return img.replace(/=s0-w\d+$/, '=s0-w640');
+      return img.replace(/=s0-w\d+(-[a-z]+)*$/, '=s0-w640');
     }
     return img.startsWith('http') ? img : null;
   } catch {
@@ -230,7 +269,7 @@ export async function GET() {
       const title  = dashIdx > 15 ? rawTitle.slice(0, dashIdx) : rawTitle;
       const source = dashIdx > 15 ? rawTitle.slice(dashIdx + 3).trim() : 'Google News';
 
-      const rawDesc = entry.contentSnippet ?? (entry as Record<string, string>)['content'] ?? '';
+      const rawDesc = entry.contentSnippet ?? (entry as unknown as Record<string, string>)['content'] ?? '';
       const fullText = stripHtml(rawDesc);
       const description = fullText.slice(0, 300);
 
@@ -238,6 +277,9 @@ export async function GET() {
 
       const geo = geocode(title + ' ' + fullText);
       if (!geo) continue;
+
+      // Try to get image directly from RSS entry before falling back to page fetch
+      const directImage = extractEntryImage(entry as unknown as Record<string, unknown>);
 
       candidates.push({
         title,
@@ -248,21 +290,31 @@ export async function GET() {
         fullDescription: fullText || undefined,
         lat: geo.lat,
         lng: geo.lng,
+        imageUrl: directImage ?? undefined,
       });
 
       if (candidates.length >= 9) break;
     }
 
-    // Fetch thumbnails for all candidates in parallel (max 4s per image)
-    const imageResults = await Promise.allSettled(
-      candidates.map(c => fetchNewsImage(c.link))
+    // For candidates without a direct RSS image, fetch from the article page
+    const fetchQueue = candidates
+      .map((c, i) => ({ i, link: c.link, hasImage: !!c.imageUrl }))
+      .filter(x => !x.hasImage);
+
+    const fetchResults = await Promise.allSettled(
+      fetchQueue.map(x => fetchNewsImage(x.link))
     );
-    const items: NewsItem[] = candidates.map((c, i) => ({
-      ...c,
-      imageUrl: imageResults[i].status === 'fulfilled'
-        ? (imageResults[i] as PromiseFulfilledResult<string | null>).value ?? undefined
-        : undefined,
-    }));
+
+    const items: NewsItem[] = candidates.map((c, i) => {
+      if (c.imageUrl) return c;
+      const qIdx = fetchQueue.findIndex(x => x.i === i);
+      if (qIdx === -1) return c;
+      const r = fetchResults[qIdx];
+      return {
+        ...c,
+        imageUrl: r.status === 'fulfilled' ? (r.value ?? undefined) : undefined,
+      };
+    });
 
     return NextResponse.json({ items }, {
       headers: { 'Cache-Control': 'public, max-age=90, stale-while-revalidate=60' },

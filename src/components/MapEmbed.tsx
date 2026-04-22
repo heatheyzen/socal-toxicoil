@@ -102,7 +102,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const makeFill = (r: number, g: number, b: number, a: number): any =>
-        new SimpleFillSymbol({ color: [r, g, b, a], outline: { color: [160, 160, 160, 0.4], width: 0.3 } });
+        new SimpleFillSymbol({ color: [r, g, b, a], outline: { color: [80, 80, 80, 0.75], width: 0.8 } });
 
       const ORDER = { polygon: 1, polyline: 2, point: 3 };
       const featureLayers = [...LAYER_CONFIGS]
@@ -120,12 +120,12 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             // Color-coded choropleth by PM2.5 percentile
             renderer = new ClassBreaksRenderer({
               field: 'PM2_5_Pctl',
-              defaultSymbol: makeFill(180, 180, 180, 0.12),
+              defaultSymbol: makeFill(180, 180, 180, 0.50),
               classBreakInfos: [
-                { minValue: 0,  maxValue: 25,  symbol: makeFill(254, 240, 217, 0.55), label: '0–25th pct (low)' },
-                { minValue: 25, maxValue: 50,  symbol: makeFill(253, 190,  90, 0.65), label: '25–50th pct' },
-                { minValue: 50, maxValue: 75,  symbol: makeFill(240,  90,  40, 0.72), label: '50–75th pct' },
-                { minValue: 75, maxValue: 101, symbol: makeFill(180,  30,  30, 0.78), label: '75–100th pct (high)' },
+                { minValue: 0,  maxValue: 25,  symbol: makeFill(254, 240, 217, 0.50), label: '0–25th pct (low)' },
+                { minValue: 25, maxValue: 50,  symbol: makeFill(253, 190,  90, 0.50), label: '25–50th pct' },
+                { minValue: 50, maxValue: 75,  symbol: makeFill(240,  90,  40, 0.50), label: '50–75th pct' },
+                { minValue: 75, maxValue: 101, symbol: makeFill(180,  30,  30, 0.50), label: '75–100th pct (high)' },
               ],
             });
           } else {
