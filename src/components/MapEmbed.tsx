@@ -225,11 +225,16 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           if (gen !== hoverGenRef.current) return;
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const hit = response.results.find((r: any) =>
-            r.type === 'graphic' && r.graphic?.attributes &&
-            (r.graphic?.layer?.type === 'feature' || r.graphic?.attributes?._type === 'news')
+          const hit = response.results.find((r: any) => {
+            if (r.type !== 'graphic' || !r.graphic?.attributes) return false;
+            if (r.graphic?.attributes?._type === 'news') return true;
+            if (r.graphic?.layer?.type !== 'feature') return false;
+            // Exclude INDIGENOUS — visual-only, so don't let it block layers beneath it
+            let layerId: string | null = null;
+            layerMapRef.current.forEach((l, id) => { if (l === r.graphic.layer) layerId = id; });
+            return layerId !== null && layerId !== 'INDIGENOUS';
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any;
+          }) as any;
 
           if (!hit) { setTooltip(null); return; }
 
@@ -248,7 +253,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           } else {
             layerMapRef.current.forEach((l, id) => { if (l === graphic.layer) foundId = id; });
           }
-          if (!foundId || foundId === 'INDIGENOUS') { setTooltip(null); return; }
+          if (!foundId) { setTooltip(null); return; }
 
           // CalEnviroScreen: show district name + ZIP code
           if (foundId === 'CALENVIRO') {
@@ -277,11 +282,15 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       view.on('click', async (event: any) => {
         const response = await view.hitTest(event);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const hit = response.results.find((r: any) =>
-          r.type === 'graphic' && r.graphic?.attributes &&
-          (r.graphic?.layer?.type === 'feature' || r.graphic?.attributes?._type === 'news')
+        const hit = response.results.find((r: any) => {
+          if (r.type !== 'graphic' || !r.graphic?.attributes) return false;
+          if (r.graphic?.attributes?._type === 'news') return true;
+          if (r.graphic?.layer?.type !== 'feature') return false;
+          let layerId: string | null = null;
+          layerMapRef.current.forEach((l, id) => { if (l === r.graphic.layer) layerId = id; });
+          return layerId !== null && layerId !== 'INDIGENOUS';
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ) as any;
+        }) as any;
         if (!hit) return;
 
         const { graphic } = hit;
@@ -314,7 +323,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
         const hitLayer = graphic.layer;
         let foundId: LayerId | null = null;
         layerMapRef.current.forEach((l, id) => { if (l === hitLayer) foundId = id; });
-        if (!foundId || foundId === 'INDIGENOUS') return;
+        if (!foundId) return;
 
         onFeatureClickRef.current({ layerId: foundId, attributes: graphic.attributes ?? {} });
       });
