@@ -87,6 +87,26 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             visible: cfg.defaultVisible,
             opacity: isCalEnviro ? 0.6 : 1,
             outFields: ['*'],
+            ...(cfg.id === 'OIL_WELLS' ? {
+              featureReduction: {
+                type: 'cluster',
+                clusterRadius: '80px',
+                symbol: {
+                  type: 'simple-marker',
+                  color: '#E8A020',
+                  size: 18,
+                  outline: { color: 'white', width: 1.5 },
+                },
+                labelingInfo: [{
+                  labelExpressionInfo: { expression: '$feature.cluster_count' },
+                  symbol: {
+                    type: 'text',
+                    color: 'white',
+                    font: { size: 11, weight: 'bold' },
+                  },
+                }],
+              },
+            } : {}),
           });
 
           layer.when(
@@ -98,7 +118,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           return layer;
         });
 
-      const map = new ArcGISMap({ basemap: 'osm', layers });
+      const map = new ArcGISMap({ basemap: 'gray', layers });
 
       const view = new MapView({
         container: mapDivRef.current!,
