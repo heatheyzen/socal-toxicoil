@@ -26,6 +26,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
   const layerMapRef = useRef<Map<LayerId, any>>(new Map());
   const onFeatureClickRef = useRef(onFeatureClick);
   const [sdkReady, setSdkReady] = useState(false);
+  const [layerErrors, setLayerErrors] = useState<string[]>([]);
 
   useEffect(() => {
     onFeatureClickRef.current = onFeatureClick;
@@ -78,6 +79,11 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             outFields: ['*'],
           });
 
+          layer.when(
+            () => { /* loaded */ },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (err: any) => setLayerErrors(prev => [...prev, `${cfg.id}: ${err?.message ?? err}`])
+          );
           layerMapRef.current.set(cfg.id, layer);
           return layer;
         });
@@ -142,9 +148,20 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       />
       <div
         ref={mapDivRef}
-        style={{ flex: 1, minHeight: 'var(--map-min-height)', width: '100%' }}
+        style={{ flex: 1, minHeight: 'var(--map-min-height)', width: '100%', position: 'relative' }}
         className="arcgis-map-container"
-      />
+      >
+        {layerErrors.length > 0 && (
+          <div style={{
+            position: 'absolute', bottom: 8, left: 8, zIndex: 99,
+            background: 'rgba(204,68,68,0.9)', color: 'white',
+            fontSize: 11, padding: '6px 10px', borderRadius: 4,
+            maxWidth: 320,
+          }}>
+            {layerErrors.map((e, i) => <div key={i}>{e}</div>)}
+          </div>
+        )}
+      </div>
     </>
   );
 }
