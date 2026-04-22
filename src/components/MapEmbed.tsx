@@ -53,9 +53,13 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
       // API key only needed for Esri premium services (routing, geocoding).
       // All layers here are public — sending a key causes "Invalid token" errors.
 
-      const layers = LAYER_CONFIGS
+      // Render order: polygons first (bottom), then polylines, then points (top)
+      const ORDER = { polygon: 0, polyline: 1, point: 2 };
+      const layers = [...LAYER_CONFIGS]
         .filter(cfg => cfg.serviceUrl)
+        .sort((a, b) => ORDER[a.symbolType] - ORDER[b.symbolType])
         .map(cfg => {
+          const isCalEnviro = cfg.id === 'CALENVIRO';
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let symbol: any;
           if (cfg.symbolType === 'point') {
@@ -68,8 +72,8 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             symbol = new SimpleLineSymbol({ color: cfg.color, width: 2.5 });
           } else {
             symbol = new SimpleFillSymbol({
-              color: hexToRgba(cfg.color, 0.18),
-              outline: { color: cfg.color, width: 1 },
+              color: hexToRgba(cfg.color, isCalEnviro ? 0.07 : 0.18),
+              outline: { color: cfg.color, width: isCalEnviro ? 0.4 : 1 },
             });
           }
 
@@ -77,6 +81,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
             url: cfg.serviceUrl,
             renderer: new SimpleRenderer({ symbol }),
             visible: cfg.defaultVisible,
+            opacity: isCalEnviro ? 0.6 : 1,
             outFields: ['*'],
           });
 
