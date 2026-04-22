@@ -14,8 +14,59 @@ const OIL_KEYWORDS = [
   'chemical spill', 'oil contamination',
 ];
 
-// Sorted longest-first so "orange county" matches before "orange", etc.
+// Sorted longest-first so "wilmington marina" matches before "wilmington", etc.
 const GEOCODE: [string, { lat: number; lng: number }][] = ([
+  // === Specific sub-locations (match before general city names) ===
+  // LA — ports, marinas, industrial waterways
+  ['los angeles harbor',             { lat: 33.7283, lng: -118.2747 }],
+  ['long beach harbor',              { lat: 33.7523, lng: -118.2165 }],
+  ['wilmington marina',              { lat: 33.7700, lng: -118.2637 }],
+  ['cabrillo marina',                { lat: 33.7215, lng: -118.2773 }],
+  ['cabrillo beach',                 { lat: 33.7200, lng: -118.2769 }],
+  ['terminal island',                { lat: 33.7455, lng: -118.2554 }],
+  ['dominguez channel',              { lat: 33.8200, lng: -118.2500 }],
+  ['los cerritos wetlands',          { lat: 33.7814, lng: -118.1106 }],
+  ['ballona wetlands',               { lat: 33.9750, lng: -118.4200 }],
+  ['ballona creek',                  { lat: 33.9767, lng: -118.4442 }],
+  ['machado lake',                   { lat: 33.7931, lng: -118.2653 }],
+  ['alamitos bay',                   { lat: 33.7514, lng: -118.1167 }],
+  ['belmont shore',                  { lat: 33.7611, lng: -118.1356 }],
+  ['king harbor',                    { lat: 33.8436, lng: -118.3987 }],
+  ['dockweiler beach',               { lat: 33.9436, lng: -118.4469 }],
+  ['inglewood oil field',            { lat: 33.9964, lng: -118.3752 }],
+  ['torrance refinery',              { lat: 33.8347, lng: -118.3347 }],
+  // LA — beaches (Malibu/north)
+  ['leo carrillo',                   { lat: 34.0450, lng: -118.9347 }],
+  ['el matador beach',               { lat: 34.0365, lng: -118.8809 }],
+  ['zuma beach',                     { lat: 34.0155, lng: -118.8225 }],
+  ['point dume',                     { lat: 34.0003, lng: -118.8081 }],
+  ['surfrider beach',                { lat: 34.0378, lng: -118.6761 }],
+  ['will rogers beach',              { lat: 34.0228, lng: -118.5378 }],
+  // Ventura — harbors, beaches, islands
+  ['santa barbara channel',          { lat: 34.10,   lng: -119.70   }],
+  ['channel islands harbor',         { lat: 34.1597, lng: -119.2183 }],
+  ['channel islands',                { lat: 34.0069, lng: -119.7785 }],
+  ['santa cruz island',              { lat: 34.0567, lng: -119.7203 }],
+  ['anacapa island',                 { lat: 34.0108, lng: -119.3631 }],
+  ['ventura harbor',                 { lat: 34.2406, lng: -119.2721 }],
+  ['hueneme bay',                    { lat: 34.1478, lng: -119.2017 }],
+  ['rincon beach',                   { lat: 34.3619, lng: -119.4742 }],
+  ['emma wood',                      { lat: 34.2883, lng: -119.3275 }],
+  // OC — wetlands, harbors, beaches
+  ['bolsa chica ecological reserve', { lat: 33.7283, lng: -118.0597 }],
+  ['bolsa chica wetlands',           { lat: 33.7283, lng: -118.0597 }],
+  ['huntington harbor',              { lat: 33.7208, lng: -118.0750 }],
+  ['bolsa chica',                    { lat: 33.7283, lng: -118.0597 }],
+  ['upper newport bay',              { lat: 33.6408, lng: -117.8997 }],
+  ['balboa peninsula',               { lat: 33.6011, lng: -117.9042 }],
+  ['newport harbor',                 { lat: 33.6036, lng: -117.9056 }],
+  ['dana point harbor',              { lat: 33.4628, lng: -117.6986 }],
+  ['doheny beach',                   { lat: 33.4728, lng: -117.6833 }],
+  ['crystal cove',                   { lat: 33.5705, lng: -117.8361 }],
+  ['talbert marsh',                  { lat: 33.6469, lng: -117.9817 }],
+  ['santa ana river',                { lat: 33.6347, lng: -117.9600 }],
+  ['aliso creek',                    { lat: 33.5214, lng: -117.7556 }],
+  // === General city / area names ===
   // LA County
   ['port of los angeles',    { lat: 33.7283, lng: -118.2747 }],
   ['port of long beach',     { lat: 33.7523, lng: -118.2165 }],
@@ -62,9 +113,6 @@ const GEOCODE: [string, { lat: number; lng: number }][] = ([
   ['pomona',                 { lat: 34.0553, lng: -117.7490 }],
   ['venice',                 { lat: 33.9850, lng: -118.4695 }],
   // Ventura County
-  ['santa barbara channel',  { lat: 34.10,   lng: -119.70   }],
-  ['channel islands harbor', { lat: 34.1597, lng: -119.2183 }],
-  ['channel islands',        { lat: 34.0069, lng: -119.7785 }],
   ['ventura county',         { lat: 34.2746, lng: -119.2290 }],
   ['thousand oaks',          { lat: 34.1706, lng: -118.8376 }],
   ['port hueneme',           { lat: 34.1478, lng: -119.1951 }],
@@ -139,11 +187,12 @@ export async function GET() {
     for (const entry of feed.items) {
       const title = entry.title ?? '';
       const rawDesc = entry.contentSnippet ?? (entry as Record<string, string>)['content'] ?? '';
-      const description = stripHtml(rawDesc).slice(0, 300);
+      const fullText = stripHtml(rawDesc);
+      const description = fullText.slice(0, 300);
 
       if (!isOilRelated(title, description)) continue;
 
-      const geo = geocode(title + ' ' + description);
+      const geo = geocode(title + ' ' + fullText);
       if (!geo) continue;
 
       const source =
@@ -158,6 +207,7 @@ export async function GET() {
         pubDate: entry.pubDate ?? entry.isoDate ?? '',
         source,
         description,
+        fullDescription: fullText || undefined,
         lat: geo.lat,
         lng: geo.lng,
       });

@@ -33,6 +33,7 @@ export interface NewsItem {
   pubDate: string;
   source: string;
   description: string;
+  fullDescription?: string;
   lat?: number;
   lng?: number;
 }

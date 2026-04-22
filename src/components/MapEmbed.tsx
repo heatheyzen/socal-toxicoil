@@ -180,14 +180,17 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
         const { graphic } = hit;
 
         if (graphic.attributes?._type === 'news') {
+          const a = graphic.attributes;
           onFeatureClickRef.current({
             layerId: 'NEWS',
             attributes: {
-              Title: graphic.attributes.title,
-              Source: graphic.attributes.source,
-              Published: graphic.attributes.pubDate,
-              Summary: graphic.attributes.description,
-              Link: graphic.attributes.link,
+              Title: a.title,
+              Published: a.pubDate,
+              Summary: a.description,
+              ...(a.fullDescription && a.fullDescription !== a.description
+                ? { Details: a.fullDescription }
+                : {}),
+              Link: a.link,
             },
           });
           return;
