@@ -90,7 +90,7 @@ export default function MapEmbed({ onFeatureClick, visibleLayers }: MapEmbedProp
           return layer;
         });
 
-      const map = new ArcGISMap({ basemap: 'arcgis/oceans', layers });
+      const map = new ArcGISMap({ basemap: 'osm', layers });
 
       const view = new MapView({
         container: mapDivRef.current!,
