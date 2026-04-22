@@ -179,13 +179,57 @@ function isOilRelated(title: string, desc: string): boolean {
   return OIL_KEYWORDS.some(kw => text.includes(kw));
 }
 
+// Fetch the Google News redirect page and extract its og:image thumbnail
+async function fetchNewsImage(link: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(link, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible)' },
+    });
+    clearTimeout(timer);
+    if (!res.ok || !res.body) return null;
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let html = '';
+    try {
+      while (html.length < 12000) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        html += dec.decode(value, { stream: true });
+        if (html.toLowerCase().includes('</head>')) break;
+      }
+    } finally {
+      reader.cancel().catch(() => {});
+    }
+    const m =
+      html.match(/property=["']og:image["'][^>]*content=["']([^"']{10,})["']/i) ??
+      html.match(/content=["']([^"']{10,})["'][^>]*property=["']og:image["']/i);
+    if (!m?.[1]) return null;
+    const img = m[1];
+    // Google thumbnails: upgrade to higher resolution
+    if (img.includes('lh3.googleusercontent.com')) {
+      return img.replace(/=s0-w\d+$/, '=s0-w640');
+    }
+    return img.startsWith('http') ? img : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   try {
     const feed = await parser.parseURL(RSS_URL);
-    const items: NewsItem[] = [];
+    const candidates: NewsItem[] = [];
 
     for (const entry of feed.items) {
-      const title = entry.title ?? '';
+      const rawTitle = entry.title ?? '';
+      // Google News titles: "Headline - Publisher Name" — split on last " - "
+      const dashIdx = rawTitle.lastIndexOf(' - ');
+      const title  = dashIdx > 15 ? rawTitle.slice(0, dashIdx) : rawTitle;
+      const source = dashIdx > 15 ? rawTitle.slice(dashIdx + 3).trim() : 'Google News';
+
       const rawDesc = entry.contentSnippet ?? (entry as Record<string, string>)['content'] ?? '';
       const fullText = stripHtml(rawDesc);
       const description = fullText.slice(0, 300);
@@ -195,13 +239,7 @@ export async function GET() {
       const geo = geocode(title + ' ' + fullText);
       if (!geo) continue;
 
-      const source =
-        (entry as Record<string, string>)['dc:creator'] ??
-        entry.creator ??
-        feed.title ??
-        'News';
-
-      items.push({
+      candidates.push({
         title,
         link: entry.link ?? '',
         pubDate: entry.pubDate ?? entry.isoDate ?? '',
@@ -212,8 +250,19 @@ export async function GET() {
         lng: geo.lng,
       });
 
-      if (items.length >= 9) break;
+      if (candidates.length >= 9) break;
     }
+
+    // Fetch thumbnails for all candidates in parallel (max 4s per image)
+    const imageResults = await Promise.allSettled(
+      candidates.map(c => fetchNewsImage(c.link))
+    );
+    const items: NewsItem[] = candidates.map((c, i) => ({
+      ...c,
+      imageUrl: imageResults[i].status === 'fulfilled'
+        ? (imageResults[i] as PromiseFulfilledResult<string | null>).value ?? undefined
+        : undefined,
+    }));
 
     return NextResponse.json({ items }, {
       headers: { 'Cache-Control': 'public, max-age=90, stale-while-revalidate=60' },

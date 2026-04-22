@@ -34,6 +34,7 @@ export interface NewsItem {
   source: string;
   description: string;
   fullDescription?: string;
+  imageUrl?: string;
   lat?: number;
   lng?: number;
 }
